@@ -461,31 +461,24 @@ function switchMetric(m) {
 }
 
 // ── API ────────────────────────────────────────────────────────
+// Apps Script web apps reliably support cross-domain GET requests but
+// commonly fail on POST due to CORS preflight handling — so everything
+// goes through GET, with complex values (objects) JSON-encoded first.
 async function api(params) {
   if (!API) { toast('No API URL set — go to Settings', 'error'); return null; }
   try {
-    const res = await fetch(API, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    const qs = Object.entries(params).map(([k, v]) => {
+      const val = (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
+      return `${encodeURIComponent(k)}=${encodeURIComponent(val)}`;
+    }).join('&');
+    const res = await fetch(`${API}?${qs}`);
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Unknown error');
     return json.data;
   } catch (e) {
-    // Try GET fallback
-    try {
-      const qs = Object.entries(params).map(([k,v]) =>
-        k === 'data' ? `data=${encodeURIComponent(JSON.stringify(v))}` : `${k}=${encodeURIComponent(v)}`
-      ).join('&');
-      const res = await fetch(`${API}?${qs}`);
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error);
-      return json.data;
-    } catch (e2) {
-      console.error(e2);
-      toast('Connection error: ' + e2.message, 'error');
-      return null;
-    }
+    console.error(e);
+    toast('Connection error: ' + e.message, 'error');
+    return null;
   }
 }
 
