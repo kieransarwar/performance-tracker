@@ -346,23 +346,7 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
 .legend-row{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted)}
 .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 
-/* ── Team report breakdown table (printable) ─────────────── */
-.team-breakdown{margin-top:16px;overflow-x:auto}
-.team-breakdown table{width:100%;border-collapse:collapse;font-size:11px}
-.team-breakdown th{background:#162A3F;color:var(--muted);padding:7px 10px;text-align:right;font-weight:700;letter-spacing:.3px;white-space:nowrap;border:1px solid var(--border)}
-.team-breakdown th:first-child{text-align:left}
-.team-breakdown td{padding:6px 10px;border:1px solid var(--border);text-align:right;color:var(--light)}
-.team-breakdown td:first-child{text-align:left;color:var(--white);font-weight:600}
-.team-breakdown tr:nth-child(even){background:rgba(255,255,255,.02)}
-.team-breakdown .total-row td{background:rgba(44,82,130,.2);font-weight:700;color:var(--white)}
-.chip.active-all{background:rgba(244,185,66,.2);border-color:var(--gold);color:var(--gold)}
-
 @media print{
-  .report-section,.team-breakdown{page-break-inside:avoid}
-  .team-breakdown table{font-size:9px}
-  .team-breakdown th,.team-breakdown td{padding:4px 6px}
-}
-
   header,#filter-bar,.month-nav,.btn,nav{display:none!important}
   body{background:#fff;color:#000}
   .page{display:none!important}
@@ -531,7 +515,6 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
 
   <div id="filter-bar">
     <div class="chip-group" id="region-chips">
-      <button class="chip" id="chip-all" onclick="toggleAllRegions()">🌐 All</button>
       <button class="chip active EMEA" data-region="EMEA" onclick="toggleRegionFilter('EMEA')">🇬🇧 EMEA</button>
       <button class="chip active AMER" data-region="AMER" onclick="toggleRegionFilter('AMER')">🇺🇸 AMER</button>
       <button class="chip active APAC" data-region="APAC" onclick="toggleRegionFilter('APAC')">🇦🇺 APAC</button>
@@ -905,7 +888,6 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
     <div class="battle-mode-toggle">
       <button class="battle-mode-btn active" id="rpt-mode-regions"    onclick="switchReportMode('regions')">🌍 All Regions</button>
       <button class="battle-mode-btn"        id="rpt-mode-individual" onclick="switchReportMode('individual')">👤 Individual</button>
-      <button class="battle-mode-btn"        id="rpt-mode-team"       onclick="switchReportMode('team')">👥 By Team</button>
       <button class="battle-mode-btn"        id="rpt-mode-tenure"     onclick="switchReportMode('tenure')">📅 By Tenure</button>
     </div>
     <!-- Individual picker -->
@@ -915,12 +897,6 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
           oninput="onRptPersonInput(this.value)" onfocus="onRptPersonInput(this.value)">
         <div class="rpt-person-list" id="rpt-person-list"></div>
       </div>
-    </div>
-    <!-- Team selector -->
-    <div id="rpt-team-wrap" style="display:none;align-items:center;gap:10px">
-      <span class="text-sm text-muted">Team</span>
-      <select id="rpt-team-select" onchange="renderReport()" style="background:var(--card2);border:1px solid var(--border);color:var(--white);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600"></select>
-      <span class="text-xs text-muted" id="rpt-team-info"></span>
     </div>
     <!-- Tenure filter -->
     <div id="rpt-tenure-wrap">
@@ -937,7 +913,6 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
     <div class="report-narrative" id="report-narrative-Revenue"></div>
     <div class="report-chart-wrap"><canvas id="report-chart-Revenue"></canvas></div>
     <div class="legend-row" id="rpt-legend-Revenue"></div>
-    <div class="team-breakdown" id="rpt-breakdown-Revenue" style="display:none"></div>
   </div>
 
   <!-- Referral Funnel section — shown when Referrals data exists -->
@@ -957,14 +932,12 @@ input:checked+.slider:before{transform:translateX(16px);background:#fff}
     <div class="report-narrative" id="report-narrative-Capital"></div>
     <div class="report-chart-wrap"><canvas id="report-chart-Capital"></canvas></div>
     <div class="legend-row" id="rpt-legend-Capital"></div>
-    <div class="team-breakdown" id="rpt-breakdown-Capital" style="display:none"></div>
   </div>
   <div class="report-section">
     <h3 id="rpt-title-ENP">📊 ENP by Region</h3>
     <div class="report-narrative" id="report-narrative-ENP"></div>
     <div class="report-chart-wrap"><canvas id="report-chart-ENP"></canvas></div>
     <div class="legend-row" id="rpt-legend-ENP"></div>
-    <div class="team-breakdown" id="rpt-breakdown-ENP" style="display:none"></div>
   </div>
 </div>
 
@@ -1824,15 +1797,17 @@ function showPage(id) {
   if (id === 'trends')  { populateTrendsControls(); renderTrends(); }
   if (id === 'compare') { populateVsControls(); }
   if (id === 'report')   {
-    if (reportViewMode !== 'individual' && reportViewMode !== 'team') reportViewMode = 'regions';
-    ['regions','individual','team','tenure'].forEach(m => {
+    // Reset mode to regions each time the page opens — prevents stale
+    // tenure/individual state from a previous session breaking the charts.
+    if (reportViewMode !== 'individual') reportViewMode = 'regions';
+    ['regions','individual','tenure'].forEach(m => {
       const btn = document.getElementById(`rpt-mode-${m}`);
       if (btn) btn.classList.toggle('active', m === reportViewMode);
     });
-    document.getElementById('rpt-person-wrap').style.display = 'none';
-    document.getElementById('rpt-team-wrap').style.display   = reportViewMode === 'team' ? 'flex' : 'none';
-    document.getElementById('rpt-tenure-wrap').style.display = 'none';
-    if (reportViewMode === 'team') populateRptTeamDropdown();
+    const personWrap = document.getElementById('rpt-person-wrap');
+    const tenureWrap = document.getElementById('rpt-tenure-wrap');
+    if (personWrap) personWrap.style.display = 'none';
+    if (tenureWrap) tenureWrap.style.display  = 'none';
     populateRptTenureDropdown();
     renderReport();
   }
@@ -2327,32 +2302,14 @@ function renderCapitalLeaderboard() {
 }
 
 // ── Leaderboard filter controls ─────────────────────────────────
-function toggleAllRegions() {
-  // Activate all three regions at once
-  ['EMEA','AMER','APAC'].forEach(r => {
-    filterRegions.add(r);
-    const chip = document.querySelector(`.chip[data-region="${r}"]`);
-    if (chip) chip.classList.add('active', r);
-  });
-  updateAllChip();
-  renderLeaderboard();
-}
-
-function updateAllChip() {
-  const allActive = ['EMEA','AMER','APAC'].every(r => filterRegions.has(r));
-  const btn = document.getElementById('chip-all');
-  if (btn) btn.classList.toggle('active-all', allActive);
-}
-
 function toggleRegionFilter(region) {
   if (filterRegions.has(region)) {
-    if (filterRegions.size === 1) return;
+    if (filterRegions.size === 1) return; // keep at least one region active
     filterRegions.delete(region);
   } else {
     filterRegions.add(region);
   }
   document.querySelector(`.chip[data-region="${region}"]`).classList.toggle('active', filterRegions.has(region));
-  updateAllChip();
   renderLeaderboard();
 }
 
@@ -3536,28 +3493,13 @@ function renderCompare() {
 
 function switchReportMode(mode) {
   reportViewMode = mode;
-  ['regions','individual','team','tenure'].forEach(m => {
-    const btn = document.getElementById(`rpt-mode-${m}`);
-    if (btn) btn.classList.toggle('active', m === mode);
+  ['regions','individual','tenure'].forEach(m => {
+    document.getElementById(`rpt-mode-${m}`).classList.toggle('active', m === mode);
   });
   document.getElementById('rpt-person-wrap').style.display  = mode === 'individual' ? '' : 'none';
-  document.getElementById('rpt-team-wrap').style.display    = mode === 'team' ? 'flex' : 'none';
   document.getElementById('rpt-tenure-wrap').style.display  = mode === 'tenure' ? 'flex' : 'none';
-  // Hide all breakdown tables when switching mode
-  ['Revenue','Capital','ENP'].forEach(m => {
-    const bd = document.getElementById(`rpt-breakdown-${m}`);
-    if (bd) bd.style.display = 'none';
-  });
   if (mode === 'tenure') populateRptTenureDropdown();
-  if (mode === 'team')   populateRptTeamDropdown();
   if (mode !== 'individual' || reportPerson) renderReport();
-}
-
-function populateRptTeamDropdown() {
-  const sel = document.getElementById('rpt-team-select');
-  const teams = [...new Set(STATE.staff.map(s => s.Team))].filter(Boolean).sort();
-  const current = sel.value;
-  sel.innerHTML = teams.map(t => `<option value="${t}" ${t===current?'selected':''}>${t}</option>`).join('');
 }
 
 // How many months has this person contributed to any metric?
@@ -3657,19 +3599,13 @@ function setLegend(metric, items) {
 
 function renderReport() {
   if (!allMonths.length) return;
+
   const firstMonth = allMonths[0];
   const lastMonth  = allMonths[allMonths.length - 1];
   document.getElementById('report-period').textContent = `${firstMonth} – ${lastMonth}`;
-  // Hide breakdown tables unless in team mode
-  if (reportViewMode !== 'team') {
-    ['Revenue','Capital','ENP'].forEach(m => {
-      const bd = document.getElementById(`rpt-breakdown-${m}`);
-      if (bd) bd.style.display = 'none';
-    });
-  }
+
   if (reportViewMode === 'individual') { renderReportIndividual(firstMonth, lastMonth); return; }
   if (reportViewMode === 'tenure')     { renderReportTenure(firstMonth, lastMonth); return; }
-  if (reportViewMode === 'team')       { renderReportTeam(firstMonth, lastMonth); return; }
   renderReportRegions(firstMonth, lastMonth);
 }
 
@@ -3929,167 +3865,6 @@ function renderReportTenure(firstMonth, lastMonth) {
       { label:`🌐 Cohort (${cohort.length})`, data:global.map(p=>p.value),        borderColor:'#F4B942', backgroundColor:'transparent', borderDash:[5,4], borderWidth:2, tension:.35, spanGaps:true, pointRadius:3, fill:false },
     ]);
     setLegend(metric,[['#4A90D9',`EMEA (${emea_names.length})`],['#E05252',`AMER (${amer_names.length})`],['#2ECC71',`APAC (${apac_names.length})`],['#F4B942',`🌐 Cohort (${cohort.length})`]]);
-  });
-}
-
-// ── Mode: By Team ──────────────────────────────────────────────
-// Shows team aggregate trend for each metric, global reference line,
-// and a printable per-member breakdown table below each chart.
-// Designed to attach to 1:1 meetings with team managers.
-function renderReportTeam(firstMonth, lastMonth) {
-  const team = document.getElementById('rpt-team-select')?.value;
-  if (!team) return;
-
-  const teamMembers = STATE.staff.filter(s =>
-    s.Team === team && (s.Active === true || s.Active === 'TRUE')
-  ).sort((a, b) => a.Name.localeCompare(b.Name));
-
-  const memberNames = teamMembers.map(s => s.Name);
-  const memberCount = teamMembers.length;
-
-  const infoEl = document.getElementById('rpt-team-info');
-  if (infoEl) infoEl.textContent = `${memberCount} active member${memberCount !== 1 ? 's' : ''}`;
-
-  const metricIcons = { Revenue:'💰', Capital:'💳', ENP:'📊' };
-
-  // KPI cards — team totals for the latest month and growth since first month
-  const kpiWrap = document.getElementById('report-kpis');
-  kpiWrap.innerHTML = ['Revenue','Capital','ENP'].map(metric => {
-    const series  = getGroupSeries(metric, memberNames);
-    const lastVal = [...series].reverse().find(p => p.value !== null)?.value || 0;
-    const firstVal= series.find(p => p.value !== null)?.value || 0;
-    const growth  = firstVal > 0 ? ((lastVal - firstVal) / firstVal * 100) : 0;
-    const col     = growth > 0 ? 'var(--green)' : growth < 0 ? 'var(--red)' : 'var(--muted)';
-    return `<div class="report-kpi">
-      <div class="val">${fmtMetricValue(metric, lastVal)}</div>
-      <div class="lbl">${metricIcons[metric]} ${metric} · ${lastMonth}</div>
-      <div class="growth" style="color:${col}">${growth>0?'▲':growth<0?'▼':'—'} ${Math.abs(growth).toFixed(1)}% since ${firstMonth} · ${memberCount} staff</div>
-    </div>`;
-  }).join('');
-
-  ['Revenue','Capital','ENP'].forEach(metric => {
-    const icon        = ['💰','💳','📊'][['Revenue','Capital','ENP'].indexOf(metric)];
-    const teamSeries  = getGroupSeries(metric, memberNames);
-    const globalSeries = getGlobalSeries(metric);
-    const md          = STATE.metrics[metric];
-
-    document.getElementById(`rpt-title-${metric}`).textContent = `${icon} ${metric} — ${team}`;
-
-    // Narrative: team total vs global context
-    const teamLastVal  = [...teamSeries].reverse().find(p=>p.value!==null)?.value || 0;
-    const teamFirstVal = teamSeries.find(p=>p.value!==null)?.value || 0;
-    const teamPct = teamFirstVal > 0 ? ((teamLastVal - teamFirstVal) / teamFirstVal * 100).toFixed(0) : null;
-    const globalLastVal = [...globalSeries].reverse().find(p=>p.value!==null)?.value || 0;
-    const teamShare = globalLastVal > 0 ? (teamLastVal / globalLastVal * 100).toFixed(1) : null;
-    const activeCount = memberNames.filter(n => {
-      const row = md?.data?.find(r => r.Name === n);
-      return allMonths.some(m => (parseFloat(row?.[m]) || 0) > 0);
-    }).length;
-
-    document.getElementById(`report-narrative-${metric}`).textContent =
-      `${team}: ${activeCount} of ${memberCount} members contributed ${metric.toLowerCase()}. ` +
-      (teamPct !== null ? `Team ${parseFloat(teamPct) >= 0 ? 'grew' : 'declined'} ${Math.abs(teamPct)}% from ${firstMonth} to ${lastMonth}. ` : '') +
-      (teamShare !== null ? `Contributing ${teamShare}% of global ${metric.toLowerCase()} in ${lastMonth}.` : '');
-
-    // Chart: team aggregate + individual member lines (if ≤8 people) + global dashed
-    const colors10 = ['#4A90D9','#E05252','#2ECC71','#E0A050','#A050E0','#50C0E0','#E07080','#80C070'];
-    const datasets = [];
-
-    if (memberNames.length <= 8) {
-      // Show individual lines for small teams
-      memberNames.forEach((name, i) => {
-        const pSeries = getPersonSeries(name, metric);
-        datasets.push({
-          label: name,
-          data: pSeries.map(p => p.value),
-          borderColor: colors10[i % colors10.length],
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          tension: 0.35,
-          spanGaps: true,
-          pointRadius: 2,
-          fill: false,
-        });
-      });
-    }
-
-    // Team aggregate — always shown
-    datasets.push({
-      label: `${team} Total`,
-      data: teamSeries.map(p => p.value),
-      borderColor: '#FFFFFF',
-      backgroundColor: 'rgba(255,255,255,0.05)',
-      borderWidth: 2.5,
-      tension: 0.35,
-      spanGaps: true,
-      pointRadius: 3,
-      fill: memberNames.length > 8,
-    });
-
-    // Global reference
-    datasets.push({
-      label: '🌐 Global',
-      data: globalSeries.map(p => p.value),
-      borderColor: '#F4B942',
-      backgroundColor: 'transparent',
-      borderDash: [5, 4],
-      borderWidth: 1.5,
-      tension: 0.35,
-      spanGaps: true,
-      pointRadius: 2,
-      fill: false,
-    });
-
-    buildReportChart(metric, datasets);
-    setLegend(metric, [
-      ['#FFFFFF', `${team} Total`],
-      ['#F4B942', '🌐 Global reference'],
-      ...(memberNames.length <= 8 ? memberNames.map((n,i)=>[colors10[i%colors10.length], n]) : []),
-    ]);
-
-    // ── Printable breakdown table ──────────────────────────────
-    const bdEl = document.getElementById(`rpt-breakdown-${metric}`);
-    if (!bdEl) return;
-    bdEl.style.display = '';
-
-    const isRev = metric === 'Revenue';
-    const fmt   = v => v ? (isRev ? `£${Math.round(v).toLocaleString('en-GB')}` : Math.round(v).toLocaleString()) : '—';
-
-    // Build per-member data across all months
-    const memberData = memberNames.map(name => {
-      const row = md?.data?.find(r => r.Name === name);
-      const monthVals = allMonths.map(m => parseFloat(row?.[m]) || 0);
-      const total = monthVals.reduce((a, b) => a + b, 0);
-      return { name, monthVals, total };
-    }).sort((a, b) => b.total - a.total);
-
-    // Team totals per month
-    const teamMonthTotals = allMonths.map((_, i) => memberData.reduce((s, m) => s + m.monthVals[i], 0));
-    const teamGrandTotal  = teamMonthTotals.reduce((a, b) => a + b, 0);
-
-    bdEl.innerHTML = `
-      <div class="section-title" style="margin:12px 0 8px;font-size:10px">${metric} — Individual Breakdown</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            ${allMonths.map(m => `<th>${m}</th>`).join('')}
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${memberData.map(m => `<tr>
-            <td>${m.name}</td>
-            ${m.monthVals.map(v => `<td>${fmt(v)}</td>`).join('')}
-            <td><strong>${fmt(m.total)}</strong></td>
-          </tr>`).join('')}
-          <tr class="total-row">
-            <td>Team Total</td>
-            ${teamMonthTotals.map(v => `<td>${fmt(v)}</td>`).join('')}
-            <td>${fmt(teamGrandTotal)}</td>
-          </tr>
-        </tbody>
-      </table>`;
   });
 }
 
