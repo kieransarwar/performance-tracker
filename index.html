@@ -2238,7 +2238,7 @@ async function generateBriefing(){
     ${g.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2444,7 +2444,7 @@ async function generatePeriodReport(){
     ${p.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2861,7 +2861,7 @@ async function exportDeck(){
       s1.addText(String(val), { x, y:3.6, w:4, h:0.8, color:INK, fontSize:30, bold:true });
       s1.addText(lbl, { x, y:4.35, w:4, h:0.3, color:MUTED, fontSize:12 });
     });
-    s1.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.6, w:12, h:0.3, color:FAINT, fontSize:10, italic:true });
+    s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:FAINT, fontSize:10, italic:true });
 
     // 2 · Executive summary
     const s2 = slide();
