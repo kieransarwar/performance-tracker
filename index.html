@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/libs/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
 /* ══ Tokens ═══════════════════════════════════════════════════ */
 :root{
@@ -1504,7 +1504,10 @@ function renderLeaderboard(){
     .filter(row => {
       const s = staffMap[row.Name];
       if (!s || !isActive(s)) return false;
-      if ((parseFloat(row[currentMonth]) || 0) <= 0) return false;
+      // Show anyone with real activity this month — positive OR negative
+      // (a clawback of -£180 belongs on the board). Only hide true-zero /
+      // no-data rows, which would otherwise flood the board with blanks.
+      if ((parseFloat(row[currentMonth]) || 0) === 0) return false;
       return staffPassesFilters(s);
     })
     .map(row => ({ name: row.Name, value: parseFloat(row[currentMonth]) || 0, staff: staffMap[row.Name], chips: chips[row.Name] || {R:0,C:0,E:0} }))
@@ -2450,7 +2453,7 @@ async function generateBriefing(){
     ${g.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
+      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2656,7 +2659,7 @@ async function generatePeriodReport(){
     ${p.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
+      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -3022,7 +3025,10 @@ function renderReportIndividual(body){
 
 /* ── PowerPoint export — brand palette (white, electric blue) ── */
 async function exportDeck(){
-  if (typeof PptxGenJS === 'undefined'){ toast('PowerPoint library still loading — try again in a moment', 'error'); return; }
+  if (typeof PptxGenJS === 'undefined'){
+    toast('PowerPoint export is unavailable — the library failed to load. Check your connection and hard-refresh.', 'error');
+    return;
+  }
   const btn = document.getElementById('export-deck-btn');
   btn.textContent = 'Generating…'; btn.disabled = true;
   try {
@@ -3073,7 +3079,7 @@ async function exportDeck(){
       s1.addText(String(val), { x, y:3.6, w:4, h:0.8, color:INK, fontSize:30, bold:true });
       s1.addText(lbl, { x, y:4.35, w:4, h:0.3, color:MUTED, fontSize:12 });
     });
-    s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:FAINT, fontSize:10, italic:true });
+    s1.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.6, w:12, h:0.3, color:FAINT, fontSize:10, italic:true });
 
     // 2 · Executive summary
     const s2 = slide();
