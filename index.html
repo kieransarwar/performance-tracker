@@ -2492,7 +2492,7 @@ async function generateBriefing(){
     ${g.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2698,7 +2698,7 @@ async function generatePeriodReport(){
     ${p.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -3350,7 +3350,7 @@ async function buildTeamDeck(pptx, team, metrics, months){
     s1.addText(exportFmtVal(m, total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
     s1.addText(m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':''), { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
   });
-  s1.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
 
   // 2 · Trend chart per metric (image)
   for (const metric of metrics){
@@ -3394,7 +3394,7 @@ async function buildPersonDeck(pptx, person, metrics, months){
     s1.addText(exportFmtVal(m, total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
     s1.addText(m, { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
   });
-  s1.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
 
   for (const metric of metrics){
     const ser = windowSeries(seriesByMetric[metric], months);
@@ -3485,7 +3485,7 @@ async function buildGlobalDeck(pptx, metrics, months){
     s1.addText(exportFmtVal(m, statsByMetric[m].total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
     s1.addText(m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':''), { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
   });
-  s1.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
 
   // 2 · Trend chart per metric — stacked regions
   for (const metric of metrics){
