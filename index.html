@@ -2492,7 +2492,7 @@ async function generateBriefing(){
     ${g.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
+      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2698,7 +2698,7 @@ async function generatePeriodReport(){
     ${p.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
+      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -3071,8 +3071,9 @@ function renderReportIndividual(body){
 ═══════════════════════════════════════════════════════════════ */
 
 const EXPORT_PAL = {
-  BLUE:'0057FF', INK:'0B1526', MUTED:'5B6B82', FAINT:'93A2B8', LINE:'E4EAF2',
-  WHITE:'FFFFFF', SOFT:'F3F6FA', GREEN:'0E9F6E', RED:'E02D3C', GOLD:'D9A013',
+  BLUE:'0057FF', NAVY:'0A1B3D', INK:'0B1526', SLATE:'334155', MUTED:'5B6B82', FAINT:'94A3B8',
+  LINE:'E4EAF2', HAIR:'EEF2F7', WHITE:'FFFFFF', SOFT:'F6F8FB', MIST:'F1F5FA',
+  GREEN:'0E9F6E', GREENBG:'E6F6EF', RED:'DC2626', REDBG:'FBEaEa', AMBER:'C77414', AMBERBG:'FCF3E6', GOLD:'D9A013',
   EMEA:'1D4ED8', AMER:'B42318', APAC:'12805C',
 };
 const exportFmtVal = (metric, v) => metric === 'Revenue'
@@ -3204,6 +3205,7 @@ async function runExport(){
     const months = exportWindowMonths();
     if (!months.length){ toast('No months in the selected range', 'error'); return; }
     const metrics = metricChoice === 'All' ? ['Revenue','Capital','ENP'] : [metricChoice];
+    _DECKMETA = `${months[0]} – ${months[months.length-1]}`;
 
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
@@ -3234,20 +3236,48 @@ async function runExport(){
   }
 }
 
-/* ── Shared slide helpers ────────────────────────────────────────── */
-function deckSlide(pptx){ const s = pptx.addSlide(); s.background = { color: EXPORT_PAL.WHITE }; return s; }
-function deckFooter(s, txt){ s.addText(txt, { x:0.5, y:6.95, w:12.3, h:0.3, color:EXPORT_PAL.FAINT, fontSize:9 }); }
-function deckTitleBar(s, eyebrow, title, sub){
-  const P = EXPORT_PAL;
-  s.addShape(pptx_RECT(), { x:0, y:0, w:0.22, h:7.5, fill:{ color:P.BLUE } });
-  s.addText(eyebrow, { x:0.7, y:0.55, w:12, h:0.4, color:P.BLUE, fontSize:12, bold:true, charSpacing:3 });
-  s.addText(title, { x:0.7, y:1.05, w:12, h:1.1, color:P.INK, fontSize:40, bold:true });
-  if (sub) s.addText(sub, { x:0.7, y:2.35, w:12, h:0.4, color:P.MUTED, fontSize:13 });
-}
-// PptxGenJS shape enum needs the instance; stash it per-run
-let _PPTX = null;
+/* ── Consultancy-style slide system ──────────────────────────────────
+   Every content slide follows the McKinsey convention: a kicker (what
+   this slide is), an ACTION TITLE (the takeaway as a sentence), a hair
+   rule, the body, and a consistent footer with page numbers. */
+let _PPTX = null, _PAGE = 0, _TOTAL = 0, _DECKMETA = '';
 function pptx_RECT(){ return _PPTX.shapes.RECTANGLE; }
 function pptx_RREC(){ return _PPTX.shapes.ROUNDED_RECTANGLE; }
+
+function deckSlide(pptx){ const s = pptx.addSlide(); s.background = { color: EXPORT_PAL.WHITE }; return s; }
+
+/* Content slide chrome: kicker + action title + rule + footer.
+   Returns the y-coordinate where body content should begin. */
+function deckChrome(s, kicker, actionTitle){
+  const P = EXPORT_PAL;
+  _PAGE++;
+  // thin accent rail
+  s.addShape(pptx_RECT(), { x:0, y:0, w:0.12, h:7.5, fill:{ color:P.BLUE } });
+  // kicker
+  s.addText(String(kicker).toUpperCase(), { x:0.55, y:0.42, w:12.3, h:0.3, color:P.BLUE, fontSize:11, bold:true, charSpacing:2.5 });
+  // action title (the takeaway) — can be long, wraps to 2 lines
+  s.addText(actionTitle, { x:0.55, y:0.72, w:12.3, h:0.95, color:P.INK, fontSize:21, bold:true, lineSpacingMultiple:1.0, valign:'top' });
+  // hair rule under the header
+  s.addShape(pptx_RECT(), { x:0.55, y:1.72, w:12.25, h:0.014, fill:{ color:P.LINE } });
+  // footer
+  s.addShape(pptx_RECT(), { x:0.55, y:7.02, w:12.25, h:0.012, fill:{ color:P.HAIR } });
+  s.addText('Epos Now · Global Service Performance', { x:0.55, y:7.08, w:8, h:0.3, color:P.FAINT, fontSize:8.5 });
+  s.addText(_DECKMETA, { x:7, y:7.08, w:4.5, h:0.3, color:P.FAINT, fontSize:8.5, align:'right' });
+  s.addText(String(_PAGE), { x:12.2, y:7.08, w:0.6, h:0.3, color:P.FAINT, fontSize:8.5, align:'right' });
+  return 1.95; // body start y
+}
+
+/* Insight callout — the one-line "so what" bar under an action title.
+   Tinted by sentiment: positive green, negative red, neutral slate. */
+function deckInsight(s, y, text, sentiment){
+  const P = EXPORT_PAL;
+  const bg = sentiment === 'up' ? P.GREENBG : sentiment === 'down' ? P.REDBG : P.MIST;
+  const bar = sentiment === 'up' ? P.GREEN : sentiment === 'down' ? P.RED : P.SLATE;
+  s.addShape(pptx_RREC(), { x:0.55, y, w:12.25, h:0.62, fill:{ color:bg }, line:{ type:'none' }, rectRadius:0.05 });
+  s.addShape(pptx_RECT(), { x:0.55, y, w:0.06, h:0.62, fill:{ color:bar } });
+  s.addText(text, { x:0.78, y:y+0.02, w:11.9, h:0.58, color:P.INK, fontSize:12.5, valign:'middle', bold:false });
+  return y + 0.84;
+}
 
 /* Window the series to the chosen months */
 function windowSeries(fullSeries, months){
@@ -3255,39 +3285,96 @@ function windowSeries(fullSeries, months){
   return fullSeries.filter(p => set.has(monthKey(p.month)));
 }
 
-/* ── Change-analysis slide (shared by team/person/cohort) ────────── */
+/* Auto action-title: turns a metric's windowed movement into a CEO-ready
+   sentence + sentiment. e.g. "Revenue fell 32% over the quarter, led by a
+   sharp September drop". Honest — declines read as declines. */
+function autoHeadline(subject, metric, series, months){
+  const ca = changeAnalysis(series);
+  const unit = metric === 'Revenue' ? '' : metric === 'Capital' ? ' conversions' : ' sign-ups';
+  if (!ca || ca.longPct === null){
+    return { title: `${metric}${unit} for ${subject} across ${months[0]}–${months[months.length-1]}`, sentiment:'flat' };
+  }
+  const dir = ca.longPct >= 8 ? 'rose' : ca.longPct <= -8 ? 'fell' : 'held broadly flat';
+  const sentiment = ca.longPct >= 8 ? 'up' : ca.longPct <= -8 ? 'down' : 'flat';
+  const mag = Math.abs(ca.longPct).toFixed(0);
+  // Is the most recent month the inflection? Compare short-term move.
+  let tail = '';
+  if (sentiment !== 'flat' && ca.shortPct !== null){
+    if (sentiment === 'down' && ca.shortPct <= -10) tail = `, with a steep ${Math.abs(ca.shortPct).toFixed(0)}% drop in ${ca.lastMonth}`;
+    else if (sentiment === 'up' && ca.shortPct >= 10) tail = `, accelerating ${ca.shortPct.toFixed(0)}% in ${ca.lastMonth}`;
+    else if (sentiment === 'down' && ca.shortPct > 0) tail = `, though ${ca.lastMonth} showed early signs of recovery (+${ca.shortPct.toFixed(0)}%)`;
+    else if (sentiment === 'up' && ca.shortPct < 0) tail = `, though momentum cooled in ${ca.lastMonth} (${ca.shortPct.toFixed(0)}%)`;
+  }
+  const title = dir === 'held broadly flat'
+    ? `${metric}${unit} for ${subject} held broadly flat across the period`
+    : `${metric}${unit} for ${subject} ${dir} ${mag}% over the period${tail}`;
+  return { title, sentiment, ca };
+}
+
+/* Bold cover slide — dark navy, big number, strong hierarchy. */
+function deckCover(pptx, kicker, title, sub, stats){
+  const P = EXPORT_PAL;
+  const s = pptx.addSlide();
+  s.background = { color: P.NAVY };
+  // accent block top-left
+  s.addShape(pptx_RECT(), { x:0, y:0, w:0.18, h:7.5, fill:{ color:P.BLUE } });
+  s.addText(String(kicker).toUpperCase(), { x:0.7, y:1.5, w:11, h:0.4, color:'6FA0FF', fontSize:13, bold:true, charSpacing:3 });
+  s.addText(title, { x:0.68, y:2.0, w:11.9, h:1.5, color:P.WHITE, fontSize:48, bold:true });
+  s.addText(sub, { x:0.7, y:3.5, w:11.9, h:0.4, color:'B8C6DE', fontSize:14 });
+  s.addShape(pptx_RECT(), { x:0.7, y:4.25, w:11.9, h:0.012, fill:{ color:'2A3F63' } });
+  // headline stats as a strip
+  (stats||[]).forEach((st, i) => {
+    const x = 0.7 + i*4.0;
+    s.addText(st.val, { x, y:4.6, w:3.8, h:0.7, color:P.WHITE, fontSize:30, bold:true });
+    s.addText(st.lbl, { x, y:5.35, w:3.8, h:0.3, color:'8EA3C4', fontSize:12 });
+  });
+  s.addText('Prepared by Kieran Sarwar · Global Head of Service', { x:0.7, y:6.75, w:11, h:0.3, color:'5E7399', fontSize:10.5, italic:true });
+  return s;
+}
+
+/* ── Change-analysis slide — consultancy matrix ──────────────────────
+   Action title summarises the headline metric. Each metric is a row;
+   short/mid/long are columns. The long-term (headline) figure is given
+   visual weight; smaller figures sit beside it. */
 function addChangeSlide(pptx, titleName, metrics, seriesByMetric, months){
   const P = EXPORT_PAL;
   const s = deckSlide(pptx);
-  s.addText(`${titleName} — change analysis`, { x:0.5, y:0.4, w:12.3, h:0.6, color:P.INK, fontSize:28, bold:true });
-  s.addText(`${months[0]} – ${months[months.length-1]} · short, mid & long-term movement`, { x:0.5, y:1.0, w:12.3, h:0.3, color:P.MUTED, fontSize:12 });
-  let y = 1.7;
-  metrics.forEach(metric => {
+  // Headline from the first metric
+  const hero = autoHeadline(titleName, metrics[0], windowSeries(seriesByMetric[metrics[0]], months), months);
+  let y = deckChrome(s, `${titleName} · change analysis`, hero.title);
+  y = deckInsight(s, y, `Reading: short term = latest month vs prior · mid term = vs ~3 months ago · long term = across ${months[0]}–${months[months.length-1]}. Figures in red are declines.`, 'flat');
+
+  // Column headers
+  const cx = { label:0.55, long:4.6, mid:7.3, short:10.0 };
+  s.addText('METRIC', { x:cx.label, y, w:3.8, h:0.3, color:P.FAINT, fontSize:9, bold:true, charSpacing:1 });
+  s.addText('LONG TERM', { x:cx.long, y, w:2.5, h:0.3, color:P.FAINT, fontSize:9, bold:true, charSpacing:1 });
+  s.addText('MID TERM', { x:cx.mid, y, w:2.5, h:0.3, color:P.FAINT, fontSize:9, bold:true, charSpacing:1 });
+  s.addText('SHORT TERM', { x:cx.short, y, w:2.5, h:0.3, color:P.FAINT, fontSize:9, bold:true, charSpacing:1 });
+  y += 0.4;
+  s.addShape(pptx_RECT(), { x:0.55, y:y-0.05, w:12.25, h:0.012, fill:{ color:P.LINE } });
+
+  const rowH = metrics.length <= 1 ? 1.3 : metrics.length === 2 ? 1.15 : 1.0;
+  metrics.forEach((metric, mi) => {
     const ca = changeAnalysis(windowSeries(seriesByMetric[metric], months));
-    s.addText(metric.toUpperCase(), { x:0.5, y, w:12, h:0.3, color:P.BLUE, fontSize:12, bold:true, charSpacing:2 });
-    if (!ca){
-      s.addText('Not enough data in this period for a trend read.', { x:0.5, y:y+0.32, w:12, h:0.3, color:P.FAINT, fontSize:11, italic:true });
-      y += 1.0; return;
-    }
-    const cols = [
-      ['Short term', ca.shortPct, ca.shortFrom, 'vs previous month'],
-      ['Mid term',   ca.midPct,   ca.midFrom,   'vs ~3 months ago'],
-      ['Long term',  ca.longPct,  ca.longFrom,  'since start of period'],
-    ];
-    cols.forEach(([lbl, pct, from, desc], i) => {
-      const x = 0.5 + i*4.3;
-      s.addShape(pptx_RREC(), { x, y:y+0.3, w:4.0, h:1.15, fill:{ color:P.SOFT }, line:{ color:P.LINE, width:1 }, rectRadius:0.06 });
-      s.addText(lbl, { x:x+0.2, y:y+0.42, w:3.6, h:0.3, color:P.MUTED, fontSize:10, bold:true, charSpacing:1 });
+    const ry = y + 0.14 + mi*rowH;
+    // zebra
+    if (mi % 2 === 1) s.addShape(pptx_RECT(), { x:0.55, y:ry-0.08, w:12.25, h:rowH-0.06, fill:{ color:P.SOFT } });
+    const unit = metric === 'Capital' ? ' conv.' : metric === 'ENP' ? ' sign-ups' : '';
+    s.addText(metric, { x:cx.label, y:ry+0.08, w:3.6, h:0.4, color:P.INK, fontSize:15, bold:true });
+    const total = ca ? exportFmtVal(metric, windowSeries(seriesByMetric[metric], months).reduce((a,p)=>a+p.value,0)) : '—';
+    s.addText(`${total}${unit} total`, { x:cx.label, y:ry+0.48, w:3.8, h:0.3, color:P.FAINT, fontSize:9.5 });
+    const putPct = (x, pct, big) => {
       const col = pct === null ? P.FAINT : pct >= 0 ? P.GREEN : P.RED;
-      s.addText(ca.fmtPct(pct), { x:x+0.2, y:y+0.68, w:2.2, h:0.4, color:col, fontSize:22, bold:true });
-      s.addText(`${desc}${from?` (${from})`:''}`, { x:x+0.2, y:y+1.12, w:3.6, h:0.25, color:P.FAINT, fontSize:9 });
-    });
-    y += 1.65;
+      const txt = pct === null ? '—' : `${pct>=0?'▲ +':'▼ '}${Math.abs(pct).toFixed(0)}%`;
+      s.addText(txt, { x, y:ry+0.1, w:2.4, h:0.5, color:col, fontSize: big?24:16, bold:true });
+    };
+    putPct(cx.long, ca?ca.longPct:null, true);
+    putPct(cx.mid, ca?ca.midPct:null, false);
+    putPct(cx.short, ca?ca.shortPct:null, false);
   });
-  deckFooter(s, 'Epos Now · Global Service Performance');
 }
 
-/* ── Per-colleague month-by-month table slide ────────────────────── */
+/* ── Per-colleague month-by-month table — zebra, emphasised total ──── */
 function addBreakdownSlides(pptx, metric, memberNames, months){
   const P = EXPORT_PAL;
   const md = STATE.metrics[metric];
@@ -3298,156 +3385,139 @@ function addBreakdownSlides(pptx, metric, memberNames, months){
     return { name, vals, total };
   }).filter(r => r.total !== 0).sort((a,b) => b.total - a.total);
 
-  // Show at most ~12 months of columns to keep it readable; if more, use last 12
   const showMonths = months.length > 12 ? months.slice(-12) : months;
   const offset = months.length - showMonths.length;
+  const grandTotal = rows.reduce((a,r)=>a+r.total,0);
 
-  const PER_SLIDE = 14;
-  for (let pi = 0; pi * PER_SLIDE < rows.length || pi === 0; pi++){
+  const PER_SLIDE = 13;
+  const pageCount = Math.max(1, Math.ceil(rows.length / PER_SLIDE));
+  for (let pi = 0; pi < pageCount; pi++){
     const chunk = rows.slice(pi*PER_SLIDE, (pi+1)*PER_SLIDE);
-    if (!chunk.length && pi > 0) break;
     const s = deckSlide(pptx);
-    s.addText(`${metric} — colleague breakdown${rows.length>PER_SLIDE?` (${pi+1})`:''}`, { x:0.5, y:0.4, w:12.3, h:0.5, color:P.INK, fontSize:24, bold:true });
-    s.addText(`${showMonths[0]} – ${showMonths[showMonths.length-1]}${offset>0?' · most recent 12 months shown':''}`, { x:0.5, y:0.95, w:12.3, h:0.3, color:P.MUTED, fontSize:11 });
+    const topName = rows[0]?.name || '—';
+    const topShare = grandTotal > 0 && rows[0] ? (rows[0].total/grandTotal*100).toFixed(0) : 0;
+    const title = pageCount > 1
+      ? `${metric} contribution by colleague (${pi+1} of ${pageCount})`
+      : `${topName} led ${metric} with ${topShare}% of the team total; full breakdown below`;
+    let y = deckChrome(s, `${metric} · colleague contribution`, title);
 
-    // Build a pptx table: header + rows
-    const head = [{ text:'Colleague', options:{ bold:true, color:P.MUTED, fontSize:9, align:'left' } }]
-      .concat(showMonths.map(m => ({ text:m.replace(' ',"\n"), options:{ bold:true, color:P.MUTED, fontSize:8, align:'right' } })))
-      .concat([{ text:'Total', options:{ bold:true, color:P.BLUE, fontSize:9, align:'right' } }]);
-    const body = chunk.map(r => {
-      const cells = [{ text:r.name, options:{ color:P.INK, fontSize:9, align:'left' } }];
+    // Header row
+    const head = [{ text:'COLLEAGUE', options:{ bold:true, color:P.FAINT, fontSize:8.5, align:'left', valign:'middle' } }]
+      .concat(showMonths.map(m => ({ text:m.toUpperCase(), options:{ bold:true, color:P.FAINT, fontSize:8, align:'right', valign:'middle' } })))
+      .concat([{ text:'TOTAL', options:{ bold:true, color:P.BLUE, fontSize:8.5, align:'right', valign:'middle' } }]);
+    const body = chunk.map((r, ri) => {
+      const zebra = ri % 2 === 1 ? P.SOFT : P.WHITE;
+      const cells = [{ text:r.name, options:{ color:P.INK, fontSize:9.5, align:'left', fill:{ color:zebra }, valign:'middle' } }];
       showMonths.forEach((m, i) => {
         const v = r.vals[offset + i];
-        cells.push({ text: v === 0 ? '–' : exportFmtCompact(metric, v), options:{ color: v<0?P.RED:P.INK, fontSize:8.5, align:'right' } });
+        cells.push({ text: v === 0 ? '–' : exportFmtCompact(metric, v),
+          options:{ color: v<0?P.RED:P.SLATE, fontSize:9, align:'right', fill:{ color:zebra }, valign:'middle' } });
       });
-      cells.push({ text: exportFmtCompact(metric, r.total), options:{ bold:true, color:P.INK, fontSize:9, align:'right' } });
+      cells.push({ text: exportFmtCompact(metric, r.total), options:{ bold:true, color:P.INK, fontSize:9.5, align:'right', fill:{ color:zebra }, valign:'middle' } });
       return cells;
     });
-    s.addTable([head, ...body], {
-      x:0.5, y:1.4, w:12.3, colW:[2.2].concat(showMonths.map(()=>  (9.0/showMonths.length) )).concat([1.1]),
-      border:{ type:'solid', color:P.LINE, pt:0.5 }, fontFace:'Inter',
-      rowH: 0.3, valign:'middle',
+    // Total row (only on last page)
+    const tableData = [head, ...body];
+    if (pi === pageCount - 1){
+      const colSum = showMonths.map((m, i) => rows.reduce((a,r)=>a + r.vals[offset+i], 0));
+      const totalRow = [{ text:'TEAM TOTAL', options:{ bold:true, color:P.WHITE, fontSize:9.5, align:'left', fill:{ color:P.NAVY }, valign:'middle' } }]
+        .concat(colSum.map(v => ({ text: exportFmtCompact(metric, v), options:{ bold:true, color:P.WHITE, fontSize:9, align:'right', fill:{ color:P.NAVY }, valign:'middle' } })))
+        .concat([{ text: exportFmtCompact(metric, grandTotal), options:{ bold:true, color:P.WHITE, fontSize:9.5, align:'right', fill:{ color:P.NAVY }, valign:'middle' } }]);
+      tableData.push(totalRow);
+    }
+    s.addTable(tableData, {
+      x:0.55, y:y+0.05, w:12.25,
+      colW:[2.5].concat(showMonths.map(()=> (8.6/showMonths.length))).concat([1.15]),
+      border:{ type:'solid', color:P.HAIR, pt:0.5 }, fontFace:'Inter',
+      rowH: 0.34, valign:'middle', autoPage:false,
     });
-    deckFooter(s, `Epos Now · ${metric} · colleague breakdown`);
   }
+}
+
+/* Single-entity trend slide: auto action-title + annotated area chart,
+   with the latest value and the long-term change called out on-slide. */
+async function addTrendSlide(pptx, subject, metric, series, months){
+  const P = EXPORT_PAL;
+  const ser = windowSeries(series, months);
+  const hl = autoHeadline(subject, metric, series, months);
+  const img = await exportChartImage({
+    type:'line',
+    data:{ labels: ser.map(p=>p.month), datasets:[{
+      label: subject, data: ser.map(p=>p.value),
+      borderColor:DECK_CHART.accent, backgroundColor:'rgba(0,87,255,0.09)', fill:true,
+      borderWidth:3.5, tension:.35, pointRadius:4, pointBackgroundColor:DECK_CHART.accent, pointBorderColor:'#FFFFFF', pointBorderWidth:2 }]},
+    options:{ plugins:{ legend:{ display:false } }, scales: deckAxis(metric) }
+  }, 1100, 400);
+  const s = deckSlide(pptx);
+  let y = deckChrome(s, `${subject} · ${metric} trend`, hl.title);
+  // Callout stats column on the right of the chart
+  const total = ser.reduce((a,p)=>a+p.value,0);
+  const ca = hl.ca;
+  if (img) s.addImage({ data:img, x:0.55, y:y+0.1, w:9.3, h:4.6 });
+  // right rail stat cards
+  const rx = 10.1, rw = 2.7;
+  const cards = [
+    { lbl:'PERIOD TOTAL', val: exportFmtVal(metric, total), col:P.INK },
+    { lbl:'LATEST MONTH', val: ca ? exportFmtVal(metric, ca.last) : '—', col:P.INK, sub: ca?ca.lastMonth:'' },
+    { lbl:'VS START', val: ca&&ca.longPct!==null ? `${ca.longPct>=0?'+':''}${ca.longPct.toFixed(0)}%` : '—', col: ca&&ca.longPct>=0?P.GREEN:P.RED },
+  ];
+  cards.forEach((c, i) => {
+    const cy = y + 0.1 + i*1.55;
+    s.addShape(pptx_RREC(), { x:rx, y:cy, w:rw, h:1.35, fill:{ color:P.SOFT }, line:{ color:P.LINE, width:0.75 }, rectRadius:0.05 });
+    s.addText(c.lbl, { x:rx+0.2, y:cy+0.15, w:rw-0.4, h:0.3, color:P.FAINT, fontSize:9, bold:true, charSpacing:1 });
+    s.addText(c.val, { x:rx+0.2, y:cy+0.42, w:rw-0.4, h:0.6, color:c.col, fontSize:22, bold:true });
+    if (c.sub) s.addText(c.sub, { x:rx+0.2, y:cy+1.0, w:rw-0.4, h:0.25, color:P.FAINT, fontSize:9 });
+  });
 }
 
 /* ── TEAM deck ───────────────────────────────────────────────────── */
 async function buildTeamDeck(pptx, team, metrics, months){
-  _PPTX = pptx;
+  _PPTX = pptx; _PAGE = 0;
   const P = EXPORT_PAL;
   const memberNames = STATE.staff.filter(s => s.Team === team).map(s => s.Name);
   const activeCount = STATE.staff.filter(s => s.Team === team && isActive(s)).length;
   const seriesByMetric = {};
   ['Revenue','Capital','ENP'].forEach(m => seriesByMetric[m] = getGroupSeries(m, memberNames));
+  const stats = metrics.map(m => ({ val: exportFmtVal(m, windowSeries(seriesByMetric[m], months).reduce((a,p)=>a+p.value,0)),
+    lbl: m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':'') }));
 
-  // 1 · Title
-  const s1 = deckSlide(pptx);
-  deckTitleBar(s1, 'EPOS NOW · TEAM REPORT', team,
-    `${months[0]} – ${months[months.length-1]}   ·   ${months.length} month${months.length!==1?'s':''}   ·   ${activeCount} active colleagues`);
-  metrics.forEach((m, i) => {
-    const total = windowSeries(seriesByMetric[m], months).reduce((s,p)=>s+p.value,0);
-    s1.addText(exportFmtVal(m, total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
-    s1.addText(m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':''), { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
-  });
-  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  deckCover(pptx, 'Team performance report', team,
+    `${months[0]} – ${months[months.length-1]}  ·  ${months.length} month${months.length!==1?'s':''}  ·  ${activeCount} active colleagues`, stats);
 
-  // 2 · Trend chart per metric (image)
-  for (const metric of metrics){
-    const ser = windowSeries(seriesByMetric[metric], months);
-    const img = await exportChartImage({
-      type:'line',
-      data:{ labels: ser.map(p=>p.month), datasets:[{
-        label: team, data: ser.map(p=>p.value),
-        borderColor:DECK_CHART.accent, backgroundColor:'rgba(0,87,255,0.10)', fill:true,
-        borderWidth:3, tension:.35, pointRadius:3, pointBackgroundColor:DECK_CHART.accent }]},
-      options:{ plugins:{ legend:{ display:false } }, scales: deckAxis(metric) }
-    });
-    const s = deckSlide(pptx);
-    s.addText(`${team} — ${metric} trend`, { x:0.5, y:0.4, w:12.3, h:0.5, color:P.INK, fontSize:26, bold:true });
-    s.addText(`${months[0]} – ${months[months.length-1]}`, { x:0.5, y:0.98, w:12.3, h:0.3, color:P.MUTED, fontSize:12 });
-    if (img) s.addImage({ data:img, x:0.5, y:1.5, w:12.3, h:5.0 });
-    else s.addText('Chart could not be rendered.', { x:0.5, y:3, w:12, h:0.4, color:P.FAINT, fontSize:12, italic:true });
-    deckFooter(s, `Epos Now · ${team} · ${metric}`);
-  }
-
-  // 3 · Change analysis
+  for (const metric of metrics) await addTrendSlide(pptx, team, metric, seriesByMetric[metric], months);
   addChangeSlide(pptx, team, metrics, seriesByMetric, months);
-
-  // 4 · Per-colleague breakdown per metric
   for (const metric of metrics) addBreakdownSlides(pptx, metric, memberNames, months);
 }
 
 /* ── PERSON deck ─────────────────────────────────────────────────── */
 async function buildPersonDeck(pptx, person, metrics, months){
-  _PPTX = pptx;
-  const P = EXPORT_PAL;
+  _PPTX = pptx; _PAGE = 0;
   const st = STATE.staff.find(x => x.Name === person);
   const seriesByMetric = {};
   ['Revenue','Capital','ENP'].forEach(m => seriesByMetric[m] = getPersonSeries(person, m));
+  const stats = metrics.map(m => ({ val: exportFmtVal(m, windowSeries(seriesByMetric[m], months).reduce((a,p)=>a+p.value,0)), lbl:m }));
 
-  const s1 = deckSlide(pptx);
-  deckTitleBar(s1, 'EPOS NOW · INDIVIDUAL REPORT', person,
-    `${st?.Region||''} · ${st?.Team||''}   ·   ${months[0]} – ${months[months.length-1]}`);
-  metrics.forEach((m, i) => {
-    const total = windowSeries(seriesByMetric[m], months).reduce((s,p)=>s+p.value,0);
-    s1.addText(exportFmtVal(m, total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
-    s1.addText(m, { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
-  });
-  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  deckCover(pptx, 'Individual performance report', person,
+    `${st?.Region||''}  ·  ${st?.Team||''}  ·  ${months[0]} – ${months[months.length-1]}`, stats);
 
-  for (const metric of metrics){
-    const ser = windowSeries(seriesByMetric[metric], months);
-    const img = await exportChartImage({
-      type:'line',
-      data:{ labels: ser.map(p=>p.month), datasets:[{
-        label: person, data: ser.map(p=>p.value),
-        borderColor:DECK_CHART.accent, backgroundColor:'rgba(0,87,255,0.10)', fill:true,
-        borderWidth:3, tension:.35, pointRadius:3, pointBackgroundColor:DECK_CHART.accent }]},
-      options:{ plugins:{ legend:{ display:false } }, scales: deckAxis(metric) }
-    });
-    const s = deckSlide(pptx);
-    s.addText(`${person} — ${metric} trend`, { x:0.5, y:0.4, w:12.3, h:0.5, color:P.INK, fontSize:26, bold:true });
-    s.addText(`${months[0]} – ${months[months.length-1]}`, { x:0.5, y:0.98, w:12.3, h:0.3, color:P.MUTED, fontSize:12 });
-    if (img) s.addImage({ data:img, x:0.5, y:1.5, w:12.3, h:5.0 });
-    deckFooter(s, `Epos Now · ${person} · ${metric}`);
-  }
+  for (const metric of metrics) await addTrendSlide(pptx, person, metric, seriesByMetric[metric], months);
   addChangeSlide(pptx, person, metrics, seriesByMetric, months);
 }
 
 /* ── COHORT (tenure) deck ────────────────────────────────────────── */
 async function buildCohortDeck(pptx, minMonths, metrics, months){
-  _PPTX = pptx;
-  const P = EXPORT_PAL;
+  _PPTX = pptx; _PAGE = 0;
   const cohort = STATE.staff.filter(s => isActive(s) && tenureMonths(s) >= (minMonths||0) && (minMonths===0? tenureMonths(s)>0 : true));
   const names = cohort.map(s => s.Name);
   const label = minMonths === 0 ? 'All active producers' : `${minMonths}+ active months`;
   const seriesByMetric = {};
   ['Revenue','Capital','ENP'].forEach(m => seriesByMetric[m] = getGroupSeries(m, names));
+  const stats = metrics.map(m => ({ val: exportFmtVal(m, windowSeries(seriesByMetric[m], months).reduce((a,p)=>a+p.value,0)), lbl:m }));
 
-  const s1 = deckSlide(pptx);
-  deckTitleBar(s1, 'EPOS NOW · TENURE REPORT', label,
-    `${months[0]} – ${months[months.length-1]}   ·   ${cohort.length} colleagues`);
-  metrics.forEach((m, i) => {
-    const total = windowSeries(seriesByMetric[m], months).reduce((s,p)=>s+p.value,0);
-    s1.addText(exportFmtVal(m, total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
-    s1.addText(m, { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
-  });
+  deckCover(pptx, 'Tenure cohort report', label,
+    `${months[0]} – ${months[months.length-1]}  ·  ${cohort.length} colleagues`, stats);
 
-  for (const metric of metrics){
-    const ser = windowSeries(seriesByMetric[metric], months);
-    const img = await exportChartImage({
-      type:'line',
-      data:{ labels: ser.map(p=>p.month), datasets:[{ label, data: ser.map(p=>p.value),
-        borderColor:DECK_CHART.accent, backgroundColor:'rgba(0,87,255,0.10)', fill:true,
-        borderWidth:3, tension:.35, pointRadius:3, pointBackgroundColor:DECK_CHART.accent }]},
-      options:{ plugins:{ legend:{ display:false } }, scales: deckAxis(metric) }
-    });
-    const s = deckSlide(pptx);
-    s.addText(`${label} — ${metric} trend`, { x:0.5, y:0.4, w:12.3, h:0.5, color:P.INK, fontSize:24, bold:true });
-    if (img) s.addImage({ data:img, x:0.5, y:1.5, w:12.3, h:5.0 });
-    deckFooter(s, `Epos Now · tenure · ${metric}`);
-  }
+  for (const metric of metrics) await addTrendSlide(pptx, label, metric, seriesByMetric[metric], months);
   addChangeSlide(pptx, label, metrics, seriesByMetric, months);
   for (const metric of metrics) addBreakdownSlides(pptx, metric, names, months);
 }
@@ -3476,55 +3546,55 @@ async function buildGlobalDeck(pptx, metrics, months){
     return { emea, amer, apac, total: emea.total + amer.total + apac.total };
   };
   const statsByMetric = {}; metrics.forEach(m => statsByMetric[m] = gStats(m));
+  const regionHex = { EMEA:'#1D4ED8', AMER:'#B42318', APAC:'#12805C' };
 
-  // 1 · Title
-  const s1 = deckSlide(pptx);
-  deckTitleBar(s1, 'EPOS NOW · GLOBAL SERVICE', 'Performance Report',
-    `${months[0]} – ${months[months.length-1]}   ·   All regions   ·   ${months.length} months   ·   ${allStaff.length} active colleagues`);
-  metrics.forEach((m, i) => {
-    s1.addText(exportFmtVal(m, statsByMetric[m].total), { x:0.7 + i*4.2, y:3.6, w:4, h:0.7, color:P.INK, fontSize:26, bold:true });
-    s1.addText(m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':''), { x:0.7 + i*4.2, y:4.3, w:4, h:0.3, color:P.MUTED, fontSize:12 });
-  });
-  s1.addText('Prepared by Kieran Sarwar · EMEA Territory Manager', { x:0.7, y:6.6, w:12, h:0.3, color:P.FAINT, fontSize:10, italic:true });
+  // 1 · Cover
+  const coverStats = metrics.map(m => ({ val: exportFmtVal(m, statsByMetric[m].total),
+    lbl: m + (m==='Capital'?' conversions':m==='ENP'?' sign-ups':'') }));
+  deckCover(pptx, 'Global service performance', 'Performance Report',
+    `${months[0]} – ${months[months.length-1]}  ·  All regions  ·  ${months.length} months  ·  ${allStaff.length} active colleagues`, coverStats);
 
-  // 2 · Trend chart per metric — stacked regions
+  // 2 · Trend by region per metric — action title + legend
   for (const metric of metrics){
-    const regionHex = { EMEA:'#1D4ED8', AMER:'#B42318', APAC:'#12805C' };
     const datasets = REGIONS.map(r => {
       const ser = windowSeries(getRegionSeries(r, metric), months);
       return { label:r, data: ser.map(p=>p.value), borderColor:regionHex[r],
-        backgroundColor:'transparent', borderWidth:3, tension:.35, pointRadius:2.5 };
+        backgroundColor:'transparent', borderWidth:3.5, tension:.35, pointRadius:3, pointBackgroundColor:regionHex[r] };
     });
     const labels = windowSeries(getGlobalSeries(metric), months).map(p=>p.month);
     const img = await exportChartImage({
       type:'line', data:{ labels, datasets },
-      options:{ plugins:{ legend:{ labels:{ color:DECK_CHART.tick, font:{size:12}, usePointStyle:true } } }, scales: deckAxis(metric) }
-    });
+      options:{ plugins:{ legend:{ position:'top', labels:{ color:DECK_CHART.tick, font:{size:13}, usePointStyle:true, boxWidth:8, padding:16 } } }, scales: deckAxis(metric) }
+    }, 1150, 420);
+    const hl = autoHeadline('the global team', metric, getGlobalSeries(metric), months);
     const s = deckSlide(pptx);
-    s.addText(`${metric} trend by region`, { x:0.5, y:0.4, w:12.3, h:0.5, color:P.INK, fontSize:26, bold:true });
-    s.addText(`${months[0]} – ${months[months.length-1]}`, { x:0.5, y:0.98, w:12.3, h:0.3, color:P.MUTED, fontSize:12 });
-    if (img) s.addImage({ data:img, x:0.5, y:1.5, w:12.3, h:5.0 });
-    deckFooter(s, `Epos Now · ${metric} · by region`);
+    let y = deckChrome(s, `Global · ${metric} by region`, hl.title);
+    if (img) s.addImage({ data:img, x:0.55, y:y+0.1, w:12.25, h:4.9 });
   }
 
-  // 3 · Top performers per metric by region
+  // 3 · Top performers per metric by region — refined cards
   metrics.forEach(metric => {
     const g = statsByMetric[metric];
     const s = deckSlide(pptx);
-    s.addText(`${metric} — top performers`, { x:0.5, y:0.4, w:12.3, h:0.6, color:P.INK, fontSize:28, bold:true });
-    s.addText(`${months[0]} – ${months[months.length-1]} · total ${exportFmtVal(metric, g.total)}`, { x:0.5, y:1.0, w:12.3, h:0.3, color:P.MUTED, fontSize:12 });
-    [['EMEA', g.emea, 0.5],['AMER', g.amer, 4.85],['APAC', g.apac, 9.2]].forEach(([r, stt, x]) => {
-      s.addShape(pptx_RREC(), { x, y:1.6, w:3.85, h:5.0, fill:{ color:P.WHITE }, line:{ color:P.LINE, width:1 }, rectRadius:0.08 });
-      s.addShape(pptx_RECT(), { x, y:1.6, w:3.85, h:0.12, fill:{ color:RC[r] } });
-      s.addText(r, { x:x+0.3, y:1.9, w:2, h:0.35, color:RC[r], fontSize:14, bold:true });
-      s.addText(exportFmtVal(metric, stt.total), { x:x+0.3, y:2.25, w:3.3, h:0.4, color:P.INK, fontSize:18, bold:true });
+    const lead = [['EMEA',g.emea],['AMER',g.amer],['APAC',g.apac]].sort((a,b)=>b[1].total-a[1].total)[0];
+    const leadShare = g.total>0 ? (lead[1].total/g.total*100).toFixed(0) : 0;
+    let y = deckChrome(s, `${metric} · top performers by region`,
+      `${lead[0]} contributed ${leadShare}% of ${metric} (${exportFmtVal(metric, lead[1].total)}); regional top 5 shown below`);
+    [['EMEA', g.emea, 0.55],['AMER', g.amer, 4.85],['APAC', g.apac, 9.15]].forEach(([r, stt, x]) => {
+      s.addShape(pptx_RREC(), { x, y:y+0.1, w:3.75, h:4.6, fill:{ color:P.WHITE }, line:{ color:P.LINE, width:1 }, rectRadius:0.06 });
+      s.addShape(pptx_RECT(), { x, y:y+0.1, w:3.75, h:0.1, fill:{ color:regionHex[r] } });
+      s.addText(r, { x:x+0.25, y:y+0.32, w:2, h:0.35, color:regionHex[r], fontSize:15, bold:true });
+      s.addText(exportFmtVal(metric, stt.total), { x:x+0.25, y:y+0.72, w:3.3, h:0.4, color:P.INK, fontSize:19, bold:true });
+      s.addText(`${stt.converters} of ${stt.staff} contributing`, { x:x+0.25, y:y+1.15, w:3.3, h:0.25, color:P.FAINT, fontSize:9.5 });
+      s.addShape(pptx_RECT(), { x:x+0.25, y:y+1.5, w:3.25, h:0.01, fill:{ color:P.HAIR } });
       stt.top.forEach((p, i) => {
-        s.addText(`${i+1}. ${p.name}`, { x:x+0.3, y:2.85+i*0.62, w:2.4, h:0.3, color:P.INK, fontSize:11, bold:i===0 });
-        s.addText(exportFmtVal(metric, p.total), { x:x+2.1, y:2.85+i*0.62, w:1.5, h:0.3, color:P.MUTED, fontSize:10.5, align:'right' });
+        const ry = y+1.65+i*0.56;
+        s.addText(`${i+1}`, { x:x+0.25, y:ry, w:0.35, h:0.3, color:P.FAINT, fontSize:11, bold:true });
+        s.addText(p.name, { x:x+0.6, y:ry, w:2.1, h:0.3, color:P.INK, fontSize:10.5, bold:i===0 });
+        s.addText(exportFmtVal(metric, p.total), { x:x+0.25, y:ry+0.26, w:3.25, h:0.22, color:P.SLATE, fontSize:9, align:'right' });
       });
-      if (!stt.top.length) s.addText('No activity in this period', { x:x+0.3, y:3.0, w:3.2, h:0.3, color:P.FAINT, fontSize:11, italic:true });
+      if (!stt.top.length) s.addText('No activity in this period', { x:x+0.25, y:y+1.8, w:3.2, h:0.3, color:P.FAINT, fontSize:11, italic:true });
     });
-    deckFooter(s, `Epos Now · ${metric}`);
   });
 
   // 4 · Change analysis (global)
