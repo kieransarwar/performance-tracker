@@ -2576,7 +2576,7 @@ async function generateBriefing(){
     ${g.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -2782,7 +2782,7 @@ async function generatePeriodReport(){
     ${p.metrics.map(metricTable).join('')}
     <div class="foot">
       <span>Epos Now · Global Service Performance</span>
-      <span>Prepared by Kieran Sarwar · Global Head of Service</span>
+      <span>Prepared by Kieran Sarwar · EMEA Territory Manager</span>
     </div>
     <script>window.onload = () => setTimeout(() => window.print(), 400);<\/script>
   </body></html>`;
@@ -4630,7 +4630,7 @@ function generateEsclBrief(){
     <div class="sec"><h2>Themes</h2><table>${themeSorted.map(([th,n])=>`<tr><td style="width:150px;color:#334155">${esc(th)}</td><td><div style="background:#EEF2F7;border-radius:6px;height:16px;overflow:hidden"><div style="height:100%;width:${Math.round(n/themeMax*100)}%;background:#0057FF;border-radius:6px"></div></div></td><td style="width:70px;text-align:right;font-weight:700">${n} (${Math.round(n/rows.length*100)}%)</td></tr>`).join('')}</table></div>
   </div>
   <div class="sec"><h2>By type</h2><table>${Object.entries(typeCount).sort((a,b)=>b[1]-a[1]).map(([ty,n])=>barRow(ty,n,typeMax,tierColors[ty]||'#5B6B82')).join('')}</table></div>
-  <div class="foot"><span>Epos Now · Global Service · T2 Escalations</span><span>Prepared by Kieran Sarwar · Global Head of Service</span></div>
+  <div class="foot"><span>Epos Now · Global Service · T2 Escalations</span><span>Prepared by Kieran Sarwar · EMEA Territory Manager</span></div>
   <script>window.onload=()=>setTimeout(()=>window.print(),400);<\/script>
   </body></html>`;
   const win=window.open('','_blank');
